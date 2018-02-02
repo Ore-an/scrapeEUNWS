@@ -6,6 +6,7 @@ import io
 import os.path
 import argparse
 threads = 8
+# TODO: scrape tags, hardcode list of homepages and use language code as argument, follow links around (can't find a chronological archive in the website).
 
 parser = argparse.ArgumentParser(description='Scrape one of the euronews homepages.')
 parser.add_argument('home', help="Address of the page")
