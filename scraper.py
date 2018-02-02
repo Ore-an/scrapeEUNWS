@@ -50,6 +50,6 @@ for story in soup.findAll('div', attrs={'class':'media__img '}):
     if story.figure and story.figure['data-video-duration'].strip():
         links.append((story.figure['data-video-duration'].strip(), story.a['href']))
 
-newspages = [home + link[1] for link in links[:2]]
+newspages = [home + link[1] for link in links]
 
 pool.map(ScrapeNews, newspages)
