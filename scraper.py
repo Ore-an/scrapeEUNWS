@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 from functools import partial
 
 threads = 8
-# TODO: check livingit.euronews?, follow links around? (archive: www.euronews.com/2017).
+# TODO: check livingit.euronews?, follow links around?
 
 parser = argparse.ArgumentParser(description='Scrape audio and article from euronews stories.')
 parser.add_argument('lang', nargs='+', help="Language code or list of language codes.")
@@ -44,24 +44,34 @@ def ScrapeNews(newspage):
     filename = newspage[0][domain_len:].replace('/','-')
     tfile = lang + '/' + filename + '.txt'
     afile = lang + '/' + filename + '.wav'
+    sfile = lang + '/' + filename + '.htm'
     try:
         open_npage = urllib2.urlopen(newspage[0])
         parsed_page = BeautifulSoup.BeautifulSoup(open_npage, 'html.parser')
         video = parsed_page.find('meta', property='og:video').attrs['content']
-        text = GetTags(parsed_page)
-        text.extend([x.text for x in parsed_page.findAll('div', class_='js-article-content')])
+        text = ["---Tags---\n"]
+        text.extend(GetTags(parsed_page))
+        text.extend(["\n---Text---\n"])
+        text.extend([xpar.text for x in parsed_page.findAll('div', class_='js-article-content') for xpar in x.findAll('p')])
+        html = [x.prettify() for x in parsed_page.findAll('div', class_='js-article-content')]
     except:
         e = sys.exc_info()[0]
         print "{} on {}".format(e,newspage[0])
         text = None
         video = None
-    if text and video and not os.path.isfile(tfile):
+    if html and video and not os.path.isfile(tfile):
         with io.open(tfile, 'w', encoding='utf8') as f:
             if type(text) == type([]):
                 f.write('\n'.join(text))
             else:
                 f.write(text)
-        GetAudio(video, afile)
+        with io.open(sfile, 'w', encoding='utf8') as f:
+            if type(html) == type([]):
+                f.write('\n'.join(html))
+            else:
+                f.write(html)
+        if not os.path.isfile(afile):
+            GetAudio(video, afile)
         print "{} done.".format(filename)
         return 0
     else:
