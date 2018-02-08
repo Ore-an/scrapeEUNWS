@@ -52,13 +52,14 @@ def ScrapeNews(newspage):
         text = ["---Tags---\n"]
         text.extend(GetTags(parsed_page))
         text.extend(["\n---Text---\n"])
-        text.extend([xpar.text for x in parsed_page.findAll('div', class_='js-article-content') for xpar in x.findAll('p')])
+        print([xpar.text for x in parsed_page.findAll('div', class_='js-article-content') for xpar in x.findAll('p') if not xpar.get('dir')])
         html = [x.prettify() for x in parsed_page.findAll('div', class_='js-article-content')]
     except:
         e = sys.exc_info()[0]
         print "{} on {}".format(e,newspage[0])
         text = None
         video = None
+        html = None
     if html and video and not os.path.isfile(tfile):
         with io.open(tfile, 'w', encoding='utf8') as f:
             if type(text) == type([]):
@@ -72,7 +73,7 @@ def ScrapeNews(newspage):
                 f.write(html)
         if not os.path.isfile(afile):
             GetAudio(video, afile)
-        print "{} done.".format(filename)
+        # print "{} done.".format(filename)
         return 0
     else:
         return 1
