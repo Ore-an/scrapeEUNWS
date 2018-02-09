@@ -9,7 +9,7 @@ import argparse
 from datetime import datetime, timedelta
 from functools import partial
 
-threads = 8
+threads = 30
 # TODO: check livingit.euronews?, follow links around?
 
 parser = argparse.ArgumentParser(description='Scrape audio and article from euronews stories.')
@@ -52,7 +52,7 @@ def ScrapeNews(newspage):
         text = ["---Tags---\n"]
         text.extend(GetTags(parsed_page))
         text.extend(["\n---Text---\n"])
-        text.extend([xpar.text for x in parsed_page.findAll('div', class_='js-article-content') for xpar in x.findAll('p') if not xpar.get('dir')])
+        text.extend([xpar.text for x in parsed_page.findAll('div', class_='js-article-content') for xpar in x.findAll('p', recursive=False) if not xpar.blockquote])
         html = [x.prettify() for x in parsed_page.findAll('div', class_='js-article-content')]
     except:
         e = sys.exc_info()[0]
@@ -66,11 +66,12 @@ def ScrapeNews(newspage):
                 f.write('\n'.join(text))
             else:
                 f.write(text)
-        with io.open(sfile, 'w', encoding='utf8') as f:
-            if type(html) == type([]):
-                f.write('\n'.join(html))
-            else:
-                f.write(html)
+        if not os.path.isfile(sfile)
+            with io.open(sfile, 'w', encoding='utf8') as f:
+                if type(html) == type([]):
+                    f.write('\n'.join(html))
+                else:
+                    f.write(html)
         if not os.path.isfile(afile):
             GetAudio(video, afile)
         # print "{} done.".format(filename)
@@ -160,4 +161,4 @@ if __name__ == "__main__":
         pool.join()
         sys.exit(0)
     else:
-        raise BaseException('Something went wrong, ensure that {} is in the languages list.'.format(lang))
+        raise BaseException('Something went wrong, ensure that {} is in the languages list and dates are correct.'.format(lang))
