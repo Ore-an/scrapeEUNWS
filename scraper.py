@@ -66,7 +66,7 @@ def ScrapeNews(newspage):
                 f.write('\n'.join(text))
             else:
                 f.write(text)
-        if not os.path.isfile(sfile)
+        if not os.path.isfile(sfile):
             with io.open(sfile, 'w', encoding='utf8') as f:
                 if type(html) == type([]):
                     f.write('\n'.join(html))
