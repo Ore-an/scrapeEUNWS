@@ -45,6 +45,8 @@ def ScrapeNews(newspage):
     tfile = lang + '/' + filename + '.txt'
     afile = lang + '/' + filename + '.wav'
     sfile = lang + '/' + filename + '.htm'
+    if os.path.isfile(tfile) and os.path.isfile(afile) and os.path.isfile(sfile):
+        return 0
     try:
         open_npage = urllib2.urlopen(newspage[0])
         parsed_page = BeautifulSoup.BeautifulSoup(open_npage, 'html.parser')
@@ -159,6 +161,7 @@ if __name__ == "__main__":
         pool.map(ScrapeNews, newspages)
         pool.close()
         pool.join()
+        print "Done."
         sys.exit(0)
     else:
         raise BaseException('Something went wrong, ensure that {} is in the languages list and dates are correct.'.format(lang))
