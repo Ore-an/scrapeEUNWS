@@ -56,6 +56,8 @@ def ScrapeNews(newspage):
         tfile = lang + '/' + filename + '.txt'
         afile = lang + '/' + filename + '.wav'
         sfile = lang + '/' + filename + '.htm'
+        if os.path.isfile(tfile) and os.path.isfile(sfile):
+            return 0
     try:
         open_npage = urllib2.urlopen(newspage[0])
         parsed_page = BeautifulSoup.BeautifulSoup(open_npage, 'html.parser')
