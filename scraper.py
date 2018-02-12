@@ -71,8 +71,8 @@ def ScrapeNews(newspage):
         text.extend([xpar.text for x in parsed_page.findAll('div', class_='js-article-content') for xpar in x.findAll('p', recursive=False) if not xpar.blockquote])
         html = [x.prettify() for x in parsed_page.findAll('div', class_='js-article-content')]
     except:
-        e = sys.exc_info()[0]
-        print "{} on {}".format(e,newspage[0])
+        e = sys.exc_info()
+        print "{} on {}".format(e[1],newspage[0])
         text = None
         video = None
         html = None
