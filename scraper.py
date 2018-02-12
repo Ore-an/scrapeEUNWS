@@ -1,3 +1,6 @@
+#!/usr/local/bin/python
+# -*- coding: utf-8 -*-
+
 import sys
 import urllib2
 import bs4 as BeautifulSoup
@@ -10,11 +13,12 @@ from datetime import datetime, timedelta
 from functools import partial
 
 threads = 30
-# TODO: check livingit.euronews?, follow links around?
+# TODO: check livingit.euronews?
 
 parser = argparse.ArgumentParser(description='Scrape audio and article from euronews stories.')
 parser.add_argument('lang', nargs='+', help="Language code or list of language codes.")
 parser.add_argument('-a', '--archive', action='store_true', help="Scrape from archive. Requires start and end dates.")
+parser.add_argument('-t', '--text-only', action='store_true', help="Get text and html only.")
 parser.add_argument('-sd', '--start-date', help="Starting date (if end date is given)"
                                                 " or single day for archive scraping (dd/mm/yy).")
 parser.add_argument('-ed', '--end-date', help="End date for archive scraping (dd/mm/yy).")
@@ -47,22 +51,32 @@ def ScrapeNews(newspage):
     sfile = lang + '/' + filename + '.htm'
     if os.path.isfile(tfile) and os.path.isfile(afile) and os.path.isfile(sfile):
         return 0
+    if text_only: # after having checked the files weren't downloaded with video already
+        lang += "/textonly"
+        tfile = lang + '/' + filename + '.txt'
+        afile = lang + '/' + filename + '.wav'
+        sfile = lang + '/' + filename + '.htm'
+        if os.path.isfile(tfile) and os.path.isfile(sfile):
+            return 0
     try:
         open_npage = urllib2.urlopen(newspage[0])
         parsed_page = BeautifulSoup.BeautifulSoup(open_npage, 'html.parser')
-        video = parsed_page.find('meta', property='og:video').attrs['content']
+        if not text_only:
+            video = parsed_page.find('meta', property='og:video').attrs['content']
+        else:
+            video = None
         text = ["---Tags---\n"]
         text.extend(GetTags(parsed_page))
         text.extend(["\n---Text---\n"])
         text.extend([xpar.text for x in parsed_page.findAll('div', class_='js-article-content') for xpar in x.findAll('p', recursive=False) if not xpar.blockquote])
         html = [x.prettify() for x in parsed_page.findAll('div', class_='js-article-content')]
     except:
-        e = sys.exc_info()[0]
-        print "{} on {}".format(e,newspage[0])
+        e = sys.exc_info()
+        print "{} on {}".format(e[1],newspage[0])
         text = None
         video = None
         html = None
-    if html and video and not os.path.isfile(tfile):
+    if html and (video or text_only) and not os.path.isfile(tfile):
         with io.open(tfile, 'w', encoding='utf8') as f:
             if type(text) == type([]):
                 f.write('\n'.join(text))
@@ -74,7 +88,7 @@ def ScrapeNews(newspage):
                     f.write('\n'.join(html))
                 else:
                     f.write(html)
-        if not os.path.isfile(afile):
+        if not os.path.isfile(afile) and not text_only:
             GetAudio(video, afile)
         # print "{} done.".format(filename)
         return 0
@@ -100,7 +114,7 @@ def FindNews(homepage):
     open_hpage = urllib2.urlopen(homepage)
     parsed_hpage = BeautifulSoup.BeautifulSoup(open_hpage, 'html.parser')
     for story in parsed_hpage.findAll('div', attrs={'class':'media__img '}):
-        if story.figure and story.figure['data-video-duration'].strip():
+        if story.figure and (story.figure['data-video-duration'].strip() or text_only):
             links.append(story.a['href'])
     npages = ['http:' + link if link[0:2] == '//' else home + link for link in links if link[0:6] != '/video'] #video links have no text
     return [(x, domain_len) for x in npages]
@@ -122,9 +136,13 @@ def FindArchivedNewsHelper(homepage, date):
     archpage = homepage + "/{y}/{m:02d}/{d:02d}".format(y=date.year, m=date.month, d=date.day)
     open_archpage = urllib2.urlopen(archpage)
     parsed_archpage = BeautifulSoup.BeautifulSoup(open_archpage, 'html.parser')
-    for story in parsed_archpage.findAll('article', attrs={'class':'u--has-video'}):
-        if story.figure and story.figure['data-video-duration'].strip():
+    if text_only:
+        for story in parsed_archpage.findAll('article', attrs={'class':'media—-article'}):
             datelinks.append(story.a['href'])
+    else:
+        for story in parsed_archpage.findAll('article', attrs={'class':'u--has-video'}):
+            if story.figure and story.figure['data-video-duration'].strip():
+                datelinks.append(story.a['href'])
     return datelinks
 
 if __name__ == "__main__":
@@ -135,6 +153,7 @@ if __name__ == "__main__":
         elif args.end_date is None:
             args.end_date = args.start_date
     lang = args.lang
+    text_only=args.text_only
     newspages = []
     if len(lang) > 1:
         for l in lang:
@@ -151,6 +170,10 @@ if __name__ == "__main__":
         if langdic.get(lang):
             if not os.path.exists(lang):
                 os.makedirs(lang)
+            if text_only:
+                txtdir = lang + "/textonly"
+                if not os.path.exists(txtdir):
+                    os.makedirs(txtdir)
             home = "http://" + langdic.get(lang) + top_domain
             if args.archive:
                 newspages = FindArchivedNews(home, args.start_date, args.end_date)
